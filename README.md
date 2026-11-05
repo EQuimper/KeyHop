@@ -4,27 +4,23 @@ KeyHop is a macOS menu bar app for clicking controls and selecting text with you
 
 ![KeyHop settings with the QWERTY keymap, text selection preview, and a miniature keyboard highlighting the pressed key](docs/images/settings-preview.png)
 
-## Run from source
+## Install with Homebrew
 
-You need macOS 14 or later, a Swift 5.10 or newer toolchain, the macOS SDK, and `make`. The app uses Apple frameworks and has no third-party package dependencies.
+KeyHop requires macOS 14 or later. The first Homebrew release is pending. Once it is published in [Emanuel’s Homebrew tap](https://github.com/EQuimper/homebrew-tap), install and launch it with:
 
-1. Install the Xcode Command Line Tools if you need them (`xcode-select --install`).
-2. Clone or download this repository. From the folder containing `Package.swift`, run:
+```sh
+brew install --cask equimper/tap/keyhop
+open -a KeyHop
+```
 
-   ```sh
-   make dev
-   ```
-
-3. Find the crosshair in the menu bar. Open **Settings…** to try the **Click** and **Select text** previews.
-
-`make dev` builds and launches `dist/local/KeyHop.app` with an ad hoc signature. You don’t need an Apple Developer account. Running the command again rebuilds and relaunches that copy. If you also run the maintainer build, quit one copy before testing shortcuts so both apps don’t listen for the same keys.
+Look for the crosshair in the menu bar. Choose **Settings…** to try the **Click** and **Select text** previews.
 
 ### Permissions
 
 - **Accessibility** lets KeyHop receive its global shortcuts, inspect controls, and click or drag in the active app. Allow the KeyHop copy you launched under **System Settings → Privacy & Security → Accessibility**.
 - **Screen Recording** (called **Screen & System Audio Recording** on some macOS versions) is requested the first time you select text. KeyHop captures the target window and recognizes visible words locally with Apple Vision. The image stays in memory.
 
-If macOS asks you to restart KeyHop, quit it from the crosshair menu and reopen the same app bundle. After rebuilding an ad hoc copy, macOS may ask you to grant access again.
+If macOS asks you to restart KeyHop, quit it from the crosshair menu, then run `open -a KeyHop` again.
 
 ## Try it
 
@@ -56,6 +52,8 @@ Open **Settings…** from the crosshair menu to change either global shortcut, t
 Click inside **Live preview** to try your keys without leaving Settings. Its miniature keyboard highlights each physical key as you press it. The text preview lets you practice both endpoints without changing your clipboard.
 
 ## Development
+
+To work on KeyHop, install the Xcode Command Line Tools (`xcode-select --install`) or Xcode with Swift 5.10 or newer. From the repository root, `make dev` builds and launches `dist/local/KeyHop.app`. This contributor copy uses an ad hoc signature. Quit the installed copy before testing global shortcuts, and grant Accessibility to the copy you are testing. macOS may ask again after a rebuild.
 
 | Command | Result |
 | --- | --- |
