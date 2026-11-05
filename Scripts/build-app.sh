@@ -4,6 +4,13 @@ team=KJ9VT8V982
 identity="Developer ID Application: Emanuel Quimper ($team)"
 output=dist/KeyHop.app
 bundle_id=dev.equimper.KeyHop
+arch_args=()
+timestamp=--timestamp=none
+if [[ "${1:-}" == "--distribution" ]]; then
+    output=dist/release/KeyHop.app
+    arch_args=(--arch arm64 --arch x86_64)
+    timestamp=--timestamp
+fi
 if [[ "${1:-}" == "--local" ]]; then
     identity=-
     output=dist/local/KeyHop.app
@@ -12,8 +19,8 @@ elif ! security find-identity -v -p codesigning | grep -F "\"$identity\"" >/dev/
     echo "Use make dev for a local build. The maintainer build requires $identity." >&2
     exit 1
 fi
-swift build -c release
-bin=$(swift build -c release --show-bin-path)
+swift build -c release ${arch_args[@]+"${arch_args[@]}"}
+bin=$(swift build -c release ${arch_args[@]+"${arch_args[@]}"} --show-bin-path)
 mkdir -p "$(dirname "$output")"
 stage=$(mktemp -d dist/.keyhop.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
@@ -22,7 +29,7 @@ mkdir -p "$app/Contents/MacOS"
 cp Resources/Info.plist "$app/Contents/"
 plutil -replace CFBundleIdentifier -string "$bundle_id" "$app/Contents/Info.plist"
 cp "$bin/KeyHop" "$app/Contents/MacOS/"
-codesign --force --sign "$identity" --options runtime --timestamp=none "$app"
+codesign --force --sign "$identity" --options runtime "$timestamp" "$app"
 if [[ "$identity" == "-" ]]; then
     codesign --verify --strict "$app"
 else

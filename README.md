@@ -6,7 +6,7 @@ KeyHop is a macOS menu bar app for clicking controls and selecting text with you
 
 ## Install with Homebrew
 
-KeyHop requires macOS 14 or later. The first Homebrew release is pending. Once it is published in [Emanuel’s Homebrew tap](https://github.com/EQuimper/homebrew-tap), install and launch it with:
+KeyHop runs on Apple silicon and Intel Macs with macOS 14 or later. Install it from [Emanuel’s Homebrew tap](https://github.com/EQuimper/homebrew-tap) and open the app:
 
 ```sh
 brew install --cask equimper/tap/keyhop
