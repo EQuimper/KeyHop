@@ -15,8 +15,8 @@ final class HintsTests: XCTestCase {
         let b = Target(title: "last", rect: CGRect(x: 50, y: 40, width: 20, height: 10))
         let (start, end) = Hints.drag(from: a, to: b, forward: true)
         let (reverseStart, reverseEnd) = Hints.drag(from: b, to: a, forward: false)
-        XCTAssertEqual(start, CGPoint(x: 11, y: 25))
-        XCTAssertEqual(end, CGPoint(x: 69, y: 45))
+        XCTAssertEqual(start, CGPoint(x: 10, y: 25))
+        XCTAssertEqual(end, CGPoint(x: 70, y: 45))
         XCTAssertEqual(reverseStart, end)
         XCTAssertEqual(reverseEnd, start)
     }

@@ -28,8 +28,8 @@ enum Hints {
 
     static func drag(from start: Target, to end: Target, forward: Bool) -> (CGPoint, CGPoint) {
         func point(_ rect: CGRect, leading: Bool) -> CGPoint {
-            let inset = min(1, rect.width / 4)
-            return CGPoint(x: leading ? rect.minX + inset : rect.maxX - inset, y: rect.midY)
+            // An inset can cross the insertion midpoint of a narrow glyph such as “l”.
+            CGPoint(x: leading ? rect.minX : rect.maxX, y: rect.midY)
         }
         return (point(start.rect, leading: forward), point(end.rect, leading: !forward))
     }
