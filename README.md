@@ -26,6 +26,8 @@ If macOS asks you to restart KeyHop, quit it from the crosshair menu, then run `
 
 **Click a control.** Open a window with a few buttons and press **⌃J**. If a button shows `jf`, type `j` and its label shrinks to `f`. Type `f` to click.
 
+**Right-click.** Hold **Shift** while typing the last letter of a label. For `jf`, type `j`, then **Shift-F** to open the target’s context menu. When choosing a search result, a grouped marker, or a grid point, use **Shift-Return** instead.
+
 **Copy a passage.** Press **⌃⇧J**. Type part of the first word and press **Return**. Type part of the last word and press **Return** again. The violet highlight previews the range. KeyHop performs the drag and invokes Copy in the original app. Paste with **⌘V**.
 
 | While KeyHop is active | Keys |

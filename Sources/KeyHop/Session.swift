@@ -131,12 +131,12 @@ final class Session {
         guard let window else { return }
         if phase == .grid {
             overlay.show(in: window.bounds, tags: (0..<9).map { Tag(label: String($0 + 1), rect: cell($0)) },
-                         highlights: [area], message: "Point · 1–9 zoom · Return clicks")
+                         highlights: [area], message: "Point · 1–9 zoom · ↵ click · ⇧↵ right-click")
             return
         }
         if let group = openGroup {
             overlay.show(in: window.bounds, tags: [], highlights: [targets[group[cursor]].rect],
-                         message: "Group · \(cursor + 1)/\(group.count) · ↑ ↓ · ↵ click")
+                         message: "Group · \(cursor + 1)/\(group.count) · ↑ ↓ · ↵ click · ⇧↵ right-click")
             return
         }
         let mode = phase == .click ? "Click" : (phase == .start ? "Start" : "End")
@@ -161,10 +161,10 @@ final class Session {
         let detail = filtering
             ? "\(query.isEmpty ? "Type to find" : query) · \(candidates.count) · Tab labels · ↵"
             : "\(prefix.isEmpty ? "Type a label" : "Type the remaining letters") · / find" + (phase == .click ? " · Space grid" : "")
-        overlay.show(in: window.bounds, tags: tags, highlights: highlights, message: "\(mode) · \(detail)")
+        overlay.show(in: window.bounds, tags: tags, highlights: highlights, message: "\(mode) · \(detail)" + (phase == .click ? " · ⇧ right-click" : ""))
     }
 
-    func handle(key: UInt16, text: String) {
+    func handle(key: UInt16, text: String, button: CGMouseButton = .left) {
         if key == 53 { stop(); return }
         if phase == .loading {
             if !readingWords && key == 49 {
@@ -194,13 +194,13 @@ final class Session {
             case 125, 126:
                 cursor = (cursor + (key == 125 ? 1 : group.count - 1)) % group.count
                 render()
-            case 36: choose(group[cursor])
+            case 36: choose(group[cursor], button: button)
             default: break
             }
             return
         }
         if phase == .grid {
-            if key == 36 { clickPoint(CGPoint(x: area.midX, y: area.midY)); return }
+            if key == 36 { clickPoint(CGPoint(x: area.midX, y: area.midY), button: button); return }
             if let number = Int(text), (1...9).contains(number), area.width > 3, area.height > 3 {
                 area = cell(number - 1)
                 render()
@@ -210,7 +210,7 @@ final class Session {
         if key == 48 { filtering.toggle(); prefix = ""; render(); return }
         if filtering {
             switch key {
-            case 36: if !candidates.isEmpty { choose(candidates[cursor]) }
+            case 36: if !candidates.isEmpty { choose(candidates[cursor], button: button) }
             case 125, 126:
                 guard !candidates.isEmpty else { return }
                 cursor = (cursor + (key == 125 ? 1 : candidates.count - 1)) % candidates.count
@@ -233,7 +233,7 @@ final class Session {
         let typed = prefix + text.lowercased()
         if let hint = hints.first(where: { $0.label == typed }) {
             if hint.members.count == 1 {
-                choose(hint.members[0])
+                choose(hint.members[0], button: button)
             } else {
                 openGroup = hint.members
                 cursor = 0
@@ -265,7 +265,7 @@ final class Session {
         return true
     }
 
-    private func choose(_ index: Int) {
+    private func choose(_ index: Int, button: CGMouseButton) {
         guard sameWindow() else { return }
         let target = targets[index]
         switch phase {
@@ -276,7 +276,7 @@ final class Session {
                 return
             }
             let visible = rect.intersection(window.bounds)
-            clickPoint(CGPoint(x: visible.midX, y: visible.midY))
+            clickPoint(CGPoint(x: visible.midX, y: visible.midY), button: button)
         case .start:
             anchor = index
             phase = .end
@@ -312,7 +312,7 @@ final class Session {
         }
     }
 
-    private func clickPoint(_ point: CGPoint) {
+    private func clickPoint(_ point: CGPoint, button: CGMouseButton) {
         guard let window, sameWindow() else { return }
         overlay.hide()
         var hit: AXUIElement?
@@ -327,12 +327,12 @@ final class Session {
         stop()
         // Some toolbar buttons acknowledge AXPress without handling a click.
         mouse(.mouseMoved, point)
-        mouse(.leftMouseDown, point)
-        mouse(.leftMouseUp, point)
+        mouse(button == .right ? .rightMouseDown : .leftMouseDown, point, button: button)
+        mouse(button == .right ? .rightMouseUp : .leftMouseUp, point, button: button)
     }
 
-    private func mouse(_ type: CGEventType, _ point: CGPoint) {
-        let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)
+    private func mouse(_ type: CGEventType, _ point: CGPoint, button: CGMouseButton = .left) {
+        let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button)
         event?.setIntegerValueField(.mouseEventClickState, value: 1)
         event?.flags = []
         event?.post(tap: .cghidEventTap)

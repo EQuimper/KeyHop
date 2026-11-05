@@ -59,7 +59,8 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 session.stop()
                 return false
             }
-            session.handle(key: binding.key, text: text)
+            let shift = CGEventFlags(rawValue: binding.flags).contains(.maskShift)
+            session.handle(key: binding.key, text: text, button: shift ? .right : .left)
             return true
         }
         guard !repeatKey, click.matches(binding) || select.matches(binding),

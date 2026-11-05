@@ -14,6 +14,7 @@ struct JumpPreview: View {
     @State private var releases: [String: UUID] = [:]
     @State private var prefix = ""
     @State private var selected: Int?
+    @State private var contextFolder: Int?
     private let folders = ["Design", "Documents", "Projects", "Archive"]
     private var labels: [String] {
         guard spatial else { return Hints.labels(count: folders.count, alphabet: letters) }
@@ -75,6 +76,13 @@ struct JumpPreview: View {
                             .padding(.horizontal, 8).frame(height: 32)
                             .background(selected == i ? Color.white.opacity(0.12) : .clear,
                                         in: RoundedRectangle(cornerRadius: 5))
+                            .popover(isPresented: SwiftUI.Binding(
+                                get: { contextFolder == i },
+                                set: { if !$0 { contextFolder = nil } }
+                            )) {
+                                Button("Select " + folders[i]) { selected = i; contextFolder = nil }
+                                    .padding(8)
+                            }
                         }
                     }.padding(6)
                     }
@@ -100,7 +108,10 @@ struct JumpPreview: View {
                 let character = press.characters.lowercased()
                 guard character.count == 1, let key = character.first, letters.contains(key) else { return .ignored }
                 let input = prefix + character
-                if let i = labels.firstIndex(of: input) { selected = i; prefix = "" }
+                if let i = labels.firstIndex(of: input) {
+                    if press.modifiers.contains(.shift) { contextFolder = i } else { selected = i }
+                    prefix = ""
+                }
                 else { prefix = labels.contains(where: { $0.hasPrefix(input) }) ? input : "" }
                 return .handled
             }
@@ -165,7 +176,7 @@ struct JumpPreview: View {
 
     private var instruction: String {
         guard focused else { return "Click the preview to try your keys." }
-        if mode == .click { return "Type a label to select a folder." }
+        if mode == .click { return "Type a label to click. Hold ⇧ on its last letter to right-click." }
         if selection.finished { return "Selection complete. Press Return to try again." }
         if wordLabels { return "Type a label to choose the word." }
         return selection.anchor == nil ? "Type the first word, then Return. Tab shows labels."
@@ -203,6 +214,7 @@ struct JumpPreview: View {
         clearKeys()
         prefix = ""
         selected = nil
+        contextFolder = nil
         selection = PreviewSelection()
         wordLabels = false
     }
