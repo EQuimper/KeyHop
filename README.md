@@ -38,7 +38,7 @@ If macOS asks you to restart KeyHop, quit it from the crosshair menu, then run `
 | Click any point in the window | Press Space in click mode. Use 1–9 to narrow the grid, with 1 at the top left and 9 at the bottom right. Return clicks the center. |
 | Cancel | Press Esc. Switching apps also dismisses the overlay. |
 
-The grid opens automatically when a window exposes no usable controls. Text selection works where a mouse drag can select text. Keep the window and its contents still while selecting. Dense columns and text inside images can yield different results from the preview because the host app determines what gets selected.
+The grid opens only when you press Space in click mode. Text selection works where a mouse drag can select text. Keep the window and its contents still while selecting. Dense columns and text inside images can yield different results from the preview because the host app determines what gets selected.
 
 ## Make it yours
 

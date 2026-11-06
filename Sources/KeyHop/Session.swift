@@ -3,7 +3,7 @@ import ApplicationServices
 import Carbon.HIToolbox
 
 final class Session {
-    private enum Phase { case loading, click, start, end, grid, message }
+    private enum Phase { case loading, click, start, end, grid, unavailable, message }
     private let overlay = Overlay(frame: .zero)
     private var window: WindowTarget?
     private var phase = Phase.loading
@@ -60,7 +60,7 @@ final class Session {
             self.loading = nil
             self.pendingKeys.removeAll()
             if select { self.message("Window reading timed out · Try selection again") }
-            else { self.enterGrid() }
+            else { self.clickUnavailable("Finding controls timed out") }
         }
         deadline = timeout
         DispatchQueue.main.asyncAfter(deadline: .now() + (select ? 5 : 2), execute: timeout)
@@ -78,7 +78,7 @@ final class Session {
                 self.targets = items
                 if items.isEmpty {
                     if select { self.message("No visible words found") }
-                    else { self.enterGrid() }
+                    else { self.clickUnavailable("No controls found") }
                     return
                 }
                 self.phase = select ? .start : .click
@@ -92,7 +92,8 @@ final class Session {
                 guard self.generation == id, !Task.isCancelled else { return }
                 self.deadline?.cancel()
                 self.loading = nil
-                self.message("Couldn’t read this window · Try another window")
+                if select { self.message("Couldn’t read this window · Try another window") }
+                else { self.clickUnavailable("Couldn’t read this window") }
             }
         }
     }
@@ -100,6 +101,11 @@ final class Session {
     private func status(_ text: String) {
         guard let window else { return }
         overlay.show(in: window.bounds, tags: [], highlights: [], message: text)
+    }
+
+    private func clickUnavailable(_ text: String) {
+        phase = .unavailable
+        status("\(text) · Space grid · Esc cancel")
     }
 
     private func message(_ text: String) {
@@ -186,6 +192,10 @@ final class Session {
                 }
                 status("Start · " + (typed.isEmpty ? "Type the first word" : typed))
             }
+            return
+        }
+        if phase == .unavailable {
+            if key == 49 { enterGrid() }
             return
         }
         if phase == .message { return }
