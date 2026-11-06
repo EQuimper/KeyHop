@@ -72,12 +72,17 @@ struct SettingsView: View {
             }.padding(.horizontal, 28).padding(.vertical, 24)
             Divider()
             HStack {
-                Link(destination: URL(string: "https://equimper.com")!) {
-                    HStack(spacing: 5) {
-                        Text("Created by Emanuel Quimper")
-                        Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
-                    }.font(.caption)
-                }.foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Link(destination: URL(string: "https://equimper.com")!) {
+                        HStack(spacing: 5) {
+                            Text("Created by Emanuel Quimper")
+                            Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
+                        }
+                    }
+                    if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+                        Text("Version \(version)")
+                    }
+                }.font(.caption).foregroundStyle(.secondary)
                 Spacer()
             }.padding(.horizontal, 28).padding(.vertical, 13)
         }
