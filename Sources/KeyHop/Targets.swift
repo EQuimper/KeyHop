@@ -50,6 +50,21 @@ func elementFrame(_ element: AXUIElement) -> CGRect? {
     return CGRect(origin: origin, size: extent)
 }
 
+enum ControlLabel {
+    static let itemRoles: Set<String> = ["AXImage", "AXCell", "AXStaticText", "AXTextField"]
+    private static let roles: Set<String> = ["AXButton", "AXCheckBox", "AXRadioButton", "AXPopUpButton", "AXLink",
+                                           "AXTextField", "AXTextArea", "AXToolbarItem", "AXMenuButton", "AXDisclosureTriangle"]
+
+    static func isTarget(role: String, actions: [String]) -> Bool {
+        roles.contains(role) || (itemRoles.contains(role) && (actions.contains("AXOpen") || actions.contains(kAXPressAction)))
+    }
+
+    static func text(title: String?, description: String?, itemName: String?, fallback: String) -> String {
+        // Finder exposes filenames as AXValue in list/column views and descriptions in icon views.
+        [title, itemName, description].compactMap { $0 }.first { !$0.isEmpty } ?? fallback
+    }
+}
+
 struct WindowTarget {
     let pid: pid_t
     let bounds: CGRect
@@ -128,19 +143,25 @@ struct WindowTarget {
 
     func controls() -> [Target] {
         guard let element else { return [] }
-        let roles: Set<String> = ["AXButton", "AXCheckBox", "AXRadioButton", "AXPopUpButton", "AXLink",
-                                  "AXTextField", "AXTextArea", "AXToolbarItem", "AXMenuButton", "AXDisclosureTriangle"]
         var result = [Target](), queue = [element], seen = Set<AXUIElement>(), index = 0
         while index < queue.count && index < 3500 && !Task.isCancelled {
             let item = queue[index]
             index += 1
             guard seen.insert(item).inserted else { continue }
             let role = attribute(item, kAXRoleAttribute) as? String ?? ""
-            if roles.contains(role), let rect = elementFrame(item), rect.width > 2, rect.height > 2,
+            var actions: CFArray?
+            if ControlLabel.itemRoles.contains(role) { AXUIElementCopyActionNames(item, &actions) }
+            let actionNames = actions as? [String] ?? []
+            let opensItem = actionNames.contains("AXOpen")
+            let actionable = ControlLabel.isTarget(role: role, actions: actionNames)
+            if actionable, let rect = elementFrame(item), rect.width > 2, rect.height > 2,
                bounds.contains(CGPoint(x: rect.midX, y: rect.midY)),
                (attribute(item, kAXEnabledAttribute) as? Bool) != false {
-                let name = attribute(item, kAXTitleAttribute) as? String ?? ""
-                let title = name.isEmpty ? (attribute(item, kAXDescriptionAttribute) as? String ?? role) : name
+                let title = ControlLabel.text(
+                    title: attribute(item, kAXTitleAttribute) as? String,
+                    description: attribute(item, kAXDescriptionAttribute) as? String,
+                    itemName: opensItem ? attribute(item, kAXValueAttribute) as? String : nil,
+                    fallback: role)
                 result.append(Target(title: title, rect: rect, element: item))
             }
             let visible = attribute(item, kAXVisibleChildrenAttribute) as? [AXUIElement] ?? []
