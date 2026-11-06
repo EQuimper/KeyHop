@@ -1,0 +1,78 @@
+@import './shared.css';
+
+:root {
+  --sl-font: var(--font-sans);
+  --sl-font-mono: var(--font-mono);
+  --sl-color-accent-low: #4b4410;
+  --sl-color-accent: var(--yellow);
+  --sl-color-accent-high: #fff5ad;
+  --sl-color-bg-nav: #232325;
+  --sl-color-bg-sidebar: #232325;
+  --sl-color-bg: #1f1f21;
+  --sl-color-hairline: #3a3a3d;
+  --sl-color-hairline-shade: #2c2c2f;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fff6a8;
+  --sl-color-accent: #6f6200;
+  --sl-color-accent-high: var(--ink);
+  --sl-color-bg-nav: var(--paper);
+  --sl-color-bg-sidebar: var(--paper);
+  --sl-color-bg: var(--paper);
+  --sl-color-hairline: #e2e2e6;
+  --sl-color-hairline-shade: #ededf0;
+}
+
+.site-title {
+  color: var(--sl-color-white);
+  font-stretch: 112%;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h1,
+.content-panel h1,
+.sl-markdown-content h2 {
+  font-stretch: 118%;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.sl-markdown-content h3 {
+  font-stretch: 110%;
+  font-weight: 700;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-white);
+  text-decoration-color: var(--yellow);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.18em;
+}
+
+:root[data-theme='light'] .sl-markdown-content a:not(:where(.not-content *)) {
+  text-decoration-color: #e6cd00;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  background: var(--yellow);
+  color: var(--ink);
+  text-decoration-color: transparent;
+}
+
+.sl-markdown-content code:not(:where(.not-content *)) {
+  font-size: 0.8em;
+}
+
+.expressive-code {
+  --ec-codeFontSize: 0.8rem;
+}
+
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 600;
+}

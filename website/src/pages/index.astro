@@ -1,0 +1,235 @@
+---
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/martian-mono/index.css';
+import '../styles/shared.css';
+import '../styles/site.css';
+import { messages } from '../lib/inbox';
+import { brewInstall, repo, version } from '../lib/release';
+
+const title = 'KeyHop: click and select on your Mac from the keyboard';
+const description =
+  'KeyHop is a free macOS menu bar app. It puts short labels on the buttons and links in any window. Type a label to click.';
+const image = new URL('/og.png', Astro.site);
+
+const moves = [
+  { keys: ['j', 'f'], text: 'Click the button labeled jf' },
+  { keys: ['j', '⇧F'], text: 'Right-click it instead' },
+  { keys: ['/', 's', 'a', 'v', 'e', '↵'], text: 'Find a control by name' },
+  { keys: ['Space', '5', '↵'], text: 'Click any point in the window' },
+];
+
+const spots = [
+  [8, 10], [36, 10], [64, 10], [92, 10],
+  [10, 46], [38, 46], [68, 46], [90, 46],
+  [12, 84], [46, 84], [66, 84], [88, 84],
+];
+
+const notes = {
+  qwerty: 'Labels follow the keyboard. Upper left starts with Q, lower left with Z.',
+  standard: 'Every letter, starting from the keys under your fingers.',
+  homeRow: 'Nine keys. You never leave the home row.',
+  custom: 'Your letters, in your order.',
+};
+
+const keymapChoices = [
+  ['qwerty', 'QWERTY'],
+  ['standard', 'Standard'],
+  ['homeRow', 'Home row'],
+  ['custom', 'Custom'],
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffe838" />
+    <link rel="canonical" href={Astro.site} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={Astro.site} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="bar" aria-label="Main">
+        <a class="brand" href="/">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round">
+              <circle cx="32" cy="32" r="17"></circle>
+              <path d="M32 6v14M32 44v14M6 32h14M44 32h14"></path>
+            </g>
+            <circle cx="32" cy="32" r="3.5" fill="currentColor"></circle>
+          </svg>
+          KeyHop
+        </a>
+        <a href="/docs/">Docs</a>
+        <a href={repo}>GitHub</a>
+      </nav>
+
+      <h1>Keep both hands on the keyboard.</h1>
+
+      <div class="pitch">
+        <p>KeyHop puts short labels on the buttons and links in any Mac window. Type one to click it.</p>
+        <button class="try" type="button" data-hop-start aria-label="Show labels on this page">
+          <span class="cap" data-hop-cap>⌃</span>
+          <span class="cap" data-hop-cap>J</span>
+          <span class="try-text">Try it on this page</span>
+        </button>
+      </div>
+
+      <div class="get">
+        <div class="command">
+          <code>{brewInstall}</code>
+          <button type="button" data-copy={brewInstall}>Copy</button>
+        </div>
+        <a class="download" href={`${repo}/releases/latest`}>Download for Mac</a>
+      </div>
+
+      <section class="window" data-inbox aria-label="Example app you can click with labels">
+        <div class="window-title">
+          <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>Inbox</span>
+          <span class="tools">
+            <button type="button" data-action="reply">Reply</button>
+            <button type="button" data-action="flag">Flag</button>
+            <button type="button" data-action="archive">Archive</button>
+          </span>
+        </div>
+        <div class="window-body">
+          <div class="folders">
+            <button type="button" data-folder="inbox">Inbox <span data-count>3</span></button>
+            <button type="button" data-folder="flagged">Flagged</button>
+            <button type="button" data-folder="archive">Archive <span data-count>0</span></button>
+          </div>
+          <div class="rows">
+            {
+              messages.map((message) => (
+                <button type="button" data-row={message.id}>
+                  <strong>{message.from}</strong>
+                  <span>{message.subject}</span>
+                </button>
+              ))
+            }
+          </div>
+          <div class="reader">
+            {
+              messages.map((message, index) => (
+                <article data-article={message.id} hidden={index > 0}>
+                  <h2>{message.subject}</h2>
+                  <p data-hop-text>{message.body}</p>
+                </article>
+              ))
+            }
+            <p class="empty" data-empty hidden>No messages</p>
+            <input data-reply type="text" aria-label="Reply" placeholder="Reply" />
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <section class="band moves" aria-labelledby="moves-title">
+        <h2 id="moves-title">Every control is a few keys away</h2>
+        <dl>
+          {
+            moves.map((move) => (
+              <div>
+                <dt>
+                  {move.keys.map((key) => (
+                    <kbd>{key}</kbd>
+                  ))}
+                </dt>
+                <dd>{move.text}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <a class="more" href="/docs/click/">Learn the click keys</a>
+      </section>
+
+      <section class="band select" aria-labelledby="select-title">
+        <h2 id="select-title">Copy a passage by its first and last words</h2>
+        <p class="passage" data-hop-text>
+          Press <kbd>⌃⇧J</kbd> and type the first word of this sentence, then Return. Type the last word, then
+          Return again. KeyHop selects everything in between and copies it.
+        </p>
+        <a class="more" href="/docs/select-text/">Learn how text selection works</a>
+      </section>
+
+      <section class="band keymaps" aria-labelledby="keymaps-title">
+        <div class="keymaps-text">
+          <h2 id="keymaps-title">Labels that suit your hands</h2>
+          <fieldset>
+            <legend class="sr-only">Keymap</legend>
+            {
+              keymapChoices.map(([value, label]) => (
+                <label>
+                  <input type="radio" name="keymap" value={value} checked={value === 'standard'} />
+                  <span>{label}</span>
+                </label>
+              ))
+            }
+          </fieldset>
+          {
+            Object.entries(notes).map(([key, note]) => (
+              <p data-keymap-note={key} hidden={key !== 'standard'}>
+                {note}
+              </p>
+            ))
+          }
+          <a class="more" href="/docs/keymaps/">Compare keymaps</a>
+        </div>
+        <div class="board" data-keymap-board aria-hidden="true">
+          {
+            spots.map(([x, y]) => (
+              <span class="hop" data-spot data-x={x} data-y={y} style={`left:${x}%;top:${y}%`} />
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="band trust" aria-labelledby="trust-title">
+        <h2 id="trust-title">Everything stays on your Mac</h2>
+        <div>
+          <h3>Accessibility</h3>
+          <p>Lets KeyHop receive its shortcuts, find controls, and click.</p>
+        </div>
+        <div>
+          <h3>Screen Recording</h3>
+          <p>Lets KeyHop read words with Apple Vision. The image stays in memory.</p>
+        </div>
+        <div>
+          <h3>No network</h3>
+          <p>KeyHop makes no network requests. No account, no analytics.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="band end">
+      <h2>Install KeyHop</h2>
+      <div class="command">
+        <code>{brewInstall}</code>
+        <button type="button" data-copy={brewInstall}>Copy</button>
+      </div>
+      <p>Version {version}. Needs macOS 14 or later. Free and open source under the MIT License.</p>
+      <nav aria-label="Footer">
+        <a href="/docs/">Docs</a>
+        <a href={repo}>GitHub</a>
+        <a href={`${repo}/releases`}>Releases</a>
+        <a href="https://equimper.com">Created by Emanuel Quimper</a>
+      </nav>
+    </footer>
+
+    <script>
+      import '../scripts/page';
+    </script>
+  </body>
+</html>

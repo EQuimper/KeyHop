@@ -2,6 +2,8 @@
 
 KeyHop is a macOS menu bar app for clicking controls and selecting text with your keyboard. Press **⌃J** to put short labels on buttons and links in the active window. Type a label to click. Press **⌃⇧J** to choose the first and last words of a passage and copy it.
 
+Read the [documentation](https://keyhop.equimper.com/docs/), or try it on the [website](https://keyhop.equimper.com).
+
 ![KeyHop settings with the QWERTY keymap, text selection preview, and a miniature keyboard highlighting the pressed key](docs/images/settings-preview.png)
 
 ## Install with Homebrew

@@ -1,0 +1,41 @@
+:root {
+  --yellow: #ffe838;
+  --ink: #000;
+  --graphite: #29292b;
+  --graphite-line: #48484c;
+  --paper: #fff;
+  --mist: #eeeef0;
+  --stone: #5a5a60;
+  --violet: #af52de;
+  --font-sans: 'Archivo Variable', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono: 'Martian Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-keys: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Archivo Variable', sans-serif;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 0.12em 0.42em;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 0.3em;
+  font-family: var(--font-keys);
+  font-size: 0.86em;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* The label as it looks in the app. */
+.hop {
+  display: inline-block;
+  padding: 0 0.32em;
+  border-radius: 3px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1.5;
+}
