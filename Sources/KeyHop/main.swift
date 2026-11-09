@@ -4,6 +4,7 @@ import SwiftUI
 
 final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let session = Session()
+    private let scrollSession = ScrollSession()
     private let keyboard = Keyboard()
     private var item: NSStatusItem!
     private var observer: NSObjectProtocol?
@@ -12,6 +13,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var settingsWindow: NSWindow?
     private var click = Binding.load("click", shift: false)
     private var select = Binding.load("select", shift: true)
+    private var scroll = Binding.load("scroll")
     private var exclusions: [String] {
         get { UserDefaults.standard.stringArray(forKey: "excluded") ?? [] }
         set { UserDefaults.standard.set(newValue, forKey: "excluded") }
@@ -28,10 +30,13 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
         keyboard.consume = { [weak self] binding, text, repeatKey in
             self?.handle(binding, text, repeatKey) ?? false
         }
-        keyboard.interrupted = { [weak self] in self?.session.stop() }
+        keyboard.repeatAllowed = { [weak self] binding, text in
+            self?.scrollSession.acceptsRepeats(key: binding.key, text: text) ?? false
+        }
+        keyboard.interrupted = { [weak self] in self?.stopSessions() }
         observer = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
                                                                      object: nil, queue: .main) { [weak self] _ in
-            self?.session.stop()
+            self?.stopSessions()
         }
         tryKeyboard()
         if !keyboardReady {
@@ -53,23 +58,31 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func handle(_ binding: Binding, _ text: String, _ repeatKey: Bool) -> Bool {
-        if session.active {
+        if session.active || scrollSession.active {
             let systemChord: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate]
             if !CGEventFlags(rawValue: binding.flags).intersection(systemChord).isEmpty {
-                session.stop()
+                stopSessions()
                 return false
             }
+            if scrollSession.active {
+                let scrollText = CGEventFlags(rawValue: binding.flags).contains(.maskShift) && text.lowercased() == "g" ? "G" : text
+                scrollSession.handle(key: binding.key, text: scrollText, repeating: repeatKey)
+                return true
+            }
+            if repeatKey { return true }
             let shift = CGEventFlags(rawValue: binding.flags).contains(.maskShift)
             session.handle(key: binding.key, text: text, button: shift ? .right : .left)
             return true
         }
-        guard !repeatKey, click.matches(binding) || select.matches(binding),
+        guard !repeatKey, click.matches(binding) || select.matches(binding) || scroll.matches(binding),
               let app = NSWorkspace.shared.frontmostApplication,
               app.bundleIdentifier != Bundle.main.bundleIdentifier, !exclusions.contains(app.bundleIdentifier ?? "") else { return false }
         let selecting = select.matches(binding)
+        let scrolling = scroll.matches(binding)
         DispatchQueue.main.async { [weak self] in
             guard NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
-            self?.session.begin(select: selecting, pid: app.processIdentifier)
+            if scrolling { self?.scrollSession.begin(pid: app.processIdentifier) }
+            else { self?.session.begin(select: selecting, pid: app.processIdentifier) }
         }
         return true
     }
@@ -104,10 +117,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openSettings() {
-        session.stop()
+        stopSessions()
         if settingsWindow == nil {
             let view = SettingsView { [weak self] mode, binding in
-                if mode == "click" { self?.click = binding } else { self?.select = binding }
+                if mode == "click" { self?.click = binding }
+                else if mode == "scroll" { self?.scroll = binding }
+                else { self?.select = binding }
             }
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
             window.title = "KeyHop Settings"
@@ -127,7 +142,9 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
         else { exclusions.append(id) }
     }
 
-    @objc private func quit() { NSApp.terminate(nil) }
+    private func stopSessions() { session.stop(); scrollSession.stop() }
+
+    @objc private func quit() { stopSessions(); NSApp.terminate(nil) }
 }
 
 let app = NSApplication.shared

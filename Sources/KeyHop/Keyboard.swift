@@ -22,13 +22,13 @@ struct Binding {
 
     func matches(_ other: Binding) -> Bool { key == other.key && flags == other.flags }
 
-    static func load(_ mode: String, shift: Bool) -> Binding {
+    static func load(_ mode: String, shift: Bool = false) -> Binding {
         if let data = UserDefaults.standard.dictionary(forKey: mode),
            let key = data["key"] as? NSNumber, let flags = data["flags"] as? NSNumber,
            let name = data["name"] as? String {
             return Binding(key: key.uint16Value, flags: CGEventFlags(rawValue: flags.uint64Value), name: name)
         }
-        return Binding(key: 38, flags: shift ? [.maskControl, .maskShift] : .maskControl, name: "J")
+        return Binding(key: 38, flags: mode == "scroll" ? [.maskControl, .maskAlternate] : (shift ? [.maskControl, .maskShift] : .maskControl), name: "J")
     }
 
     func save(_ mode: String) {
@@ -39,8 +39,31 @@ struct Binding {
 final class Keyboard {
     var consume: (Binding, String, Bool) -> Bool = { _, _, _ in false }
     var interrupted: () -> Void = {}
+    var repeatAllowed: (Binding, String) -> Bool = { _, _ in false }
+    private var repeatKeys = Set<UInt16>()
     private var tap: CFMachPort?
     private var held = Set<UInt16>()
+
+    func consumeKey(_ event: CGEvent, type: CGEventType) -> Bool {
+        let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        if type == .keyUp {
+            repeatKeys.remove(code)
+            return held.remove(code) != nil
+        }
+        let repeating = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+        if repeating && held.contains(code) && !repeatKeys.contains(code) { return true }
+        let text = NSEvent(cgEvent: event)?.charactersIgnoringModifiers ?? ""
+        let binding = Binding(key: code, flags: event.flags, name: text)
+        // Decide before handling: a panel label must not become a held scroll key.
+        let allowRepeat = !repeating && repeatAllowed(binding, text)
+        if consume(binding, text, repeating) {
+            if allowRepeat { repeatKeys.insert(code) }
+            held.insert(code)
+            return true
+        }
+        // A mode can end while the key is still down. Keep swallowing its remaining repeats.
+        return repeating && held.contains(code)
+    }
 
     func start() -> Bool {
         if tap != nil { return true }
@@ -50,22 +73,11 @@ final class Keyboard {
             if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
                 keyboard.interrupted()
                 keyboard.held.removeAll()
+                keyboard.repeatKeys.removeAll()
                 if let tap = keyboard.tap { CGEvent.tapEnable(tap: tap, enable: true) }
                 return Unmanaged.passUnretained(event)
             }
-            let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-            if type == .keyUp {
-                return keyboard.held.remove(code) != nil ? nil : Unmanaged.passUnretained(event)
-            }
-            let repeating = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
-            if repeating && keyboard.held.contains(code) { return nil }
-            let text = NSEvent(cgEvent: event)?.charactersIgnoringModifiers ?? ""
-            let binding = Binding(key: code, flags: event.flags, name: text)
-            if keyboard.consume(binding, text, repeating) {
-                keyboard.held.insert(code)
-                return nil
-            }
-            return Unmanaged.passUnretained(event)
+            return keyboard.consumeKey(event, type: type) ? nil : Unmanaged.passUnretained(event)
         }
         guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
                                            options: .defaultTap, eventsOfInterest: CGEventMask(mask),

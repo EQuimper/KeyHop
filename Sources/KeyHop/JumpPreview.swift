@@ -4,9 +4,10 @@ struct JumpPreview: View {
     let letters: [Character]
     let fill: Color
     let spatial: Bool
-    private enum Mode: String, CaseIterable { case click = "Click", text = "Select text" }
+    private enum Mode: String, CaseIterable { case click = "Click", text = "Select text", scroll = "Scroll" }
     @State private var mode: Mode = .click
     @State private var selection = PreviewSelection()
+    @State private var scrollPreview: PreviewScroll?
     @State private var wordLabels = false
     @FocusState private var focused: Bool
     @State private var keyboardMonitor: Any?
@@ -51,13 +52,15 @@ struct JumpPreview: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 8) {
                         Image(systemName: "sidebar.left")
-                        Text(mode == .click ? "Folders" : "Note").font(.system(size: 12, weight: .semibold))
+                        Text(mode == .click ? "Folders" : (mode == .scroll ? "Workspace" : "Note")).font(.system(size: 12, weight: .semibold))
                         Spacer()
                         Image(systemName: "list.bullet")
                     }
                     .foregroundStyle(.white.opacity(0.72)).padding(.horizontal, 13).frame(height: 35)
                     Divider().overlay(.white.opacity(0.09))
-                    if mode == .text {
+                    if mode == .scroll {
+                        ScrollPreviewContent(state: scrollPreview ?? PreviewScroll(letters: letters, spatial: spatial), fill: fill)
+                    } else if mode == .text {
                         passage
                     } else {
                     VStack(spacing: 2) {
@@ -100,8 +103,9 @@ struct JumpPreview: View {
             .contentShape(Rectangle())
             .focusable().focused($focused).focusEffectDisabled()
             .onTapGesture { focused = true }
-            .onKeyPress { press in
+            .onKeyPress(phases: [.down, .repeat]) { press in
                 guard focused, press.modifiers.intersection([.command, .control, .option]).isEmpty else { return .ignored }
+                if mode == .scroll { return handleScroll(press) }
                 if mode == .text { return handleSelection(press) }
                 if press.key == .escape { prefix = ""; selected = nil; focused = false; return .handled }
                 if press.key == .delete { if !prefix.isEmpty { prefix.removeLast() }; return .handled }
@@ -116,6 +120,7 @@ struct JumpPreview: View {
                 return .handled
             }
             .onChange(of: letters) { _, _ in resetPreview() }
+            .onChange(of: spatial) { _, _ in resetPreview() }
             .onChange(of: mode) { _, _ in resetPreview(); focused = true }
             .onChange(of: focused) { _, active in
                 if active { startKeyboardMonitor() }
@@ -123,7 +128,7 @@ struct JumpPreview: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in clearKeys() }
             .onDisappear { stopKeyboardMonitor() }
-            PreviewKeyboard(letters: letters, pressed: pressed, fill: fill)
+            PreviewKeyboard(letters: mode == .scroll && scrollPreview?.navigation.selected != nil ? Array("hjkludg") : letters, pressed: pressed, fill: fill)
                 .onTapGesture { focused = true }
             Text(instruction)
                 .font(.caption).foregroundStyle(.secondary)
@@ -176,6 +181,9 @@ struct JumpPreview: View {
 
     private var instruction: String {
         guard focused else { return "Click the preview to try your keys." }
+        if mode == .scroll {
+            return scrollPreview?.navigation.selected == nil ? "Type a label to choose a panel." : (scrollPreview?.navigation.pendingTop == true ? "g… press g again to go to the top." : "hjkl scroll · u/d half-page · gg top · G bottom · Tab panels · Esc")
+        }
         if mode == .click { return "Type a label to click. Hold ⇧ on its last letter to right-click." }
         if selection.finished { return "Selection complete. Press Return to try again." }
         if wordLabels { return "Type a label to choose the word." }
@@ -217,6 +225,25 @@ struct JumpPreview: View {
         contextFolder = nil
         selection = PreviewSelection()
         wordLabels = false
+        scrollPreview = PreviewScroll(letters: letters, spatial: spatial)
+    }
+
+    private func handleScroll(_ press: KeyPress) -> KeyPress.Result {
+        if press.key == .escape { resetPreview(); focused = false; return .handled }
+        let key: UInt16
+        switch press.key {
+        case .tab: key = 48
+        case .delete: key = 51
+        case .upArrow: key = 126
+        case .downArrow: key = 125
+        case .leftArrow: key = 123
+        case .rightArrow: key = 124
+        default: key = UInt16(truncatingIfNeeded: press.characters.lowercased().unicodeScalars.first?.value ?? 0) &+ 256
+        }
+        if scrollPreview == nil { scrollPreview = PreviewScroll(letters: letters, spatial: spatial) }
+        let text = press.modifiers.contains(.shift) && press.characters.lowercased() == "g" ? "G" : press.characters
+        scrollPreview?.handle(key: key, text: text, repeating: press.phase == .repeat)
+        return .handled
     }
 
     private func handleSelection(_ press: KeyPress) -> KeyPress.Result {

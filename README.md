@@ -1,6 +1,6 @@
 # KeyHop
 
-KeyHop is a macOS menu bar app for clicking controls and selecting text with your keyboard. Press **⌃J** to put short labels on buttons and links in the active window. Type a label to click. Press **⌃⇧J** to choose the first and last words of a passage and copy it.
+KeyHop is a macOS menu bar app for clicking controls, selecting text, and scrolling with your keyboard. Press **⌃J** to put short labels on buttons and links in the active window. Type a label to click. Press **⌃⇧J** to choose the first and last words of a passage and copy it.
 
 Read the [documentation](https://keyhop.equimper.com/docs/), or try it on the [website](https://keyhop.equimper.com).
 
@@ -15,7 +15,7 @@ brew install --cask equimper/tap/keyhop
 open -a KeyHop
 ```
 
-Look for the crosshair in the menu bar. Choose **Settings…** to try the **Click** and **Select text** previews.
+Look for the crosshair in the menu bar. Choose **Settings…** to try the **Click**, **Select text**, and **Scroll** previews.
 
 ### Permissions
 
@@ -32,6 +32,8 @@ If macOS asks you to restart KeyHop, quit it from the crosshair menu, then run `
 
 **Copy a passage.** Press **⌃⇧J**. Type part of the first word and press **Return**. Type part of the last word and press **Return** again. The end search picks the first matching word after your start. Press ↑ to choose an earlier match. The violet highlight previews the range. KeyHop performs the drag and invokes Copy in the original app. Paste with **⌘V**.
 
+**Scroll a panel.** Press **⌃⌥J**. With one panel, scrolling is ready immediately. With multiple panels, type a label to choose one. Use **h/j/k/l** or the arrow keys to scroll, and hold a key to keep moving. **u/d** moves half a page up/down. **gg** goes to the top and **G** (Shift-G) goes to the bottom of the selected panel. **Tab** shows panel labels again, and **Esc** exits. When an app does not expose scroll panels, KeyHop scrolls at the center of its window. Moving the mouse stops further keyboard scrolling. For `gg`/`G`, KeyHop sets the panel’s scrollbar directly or focuses the web document and sends Home/End. Panels that expose neither mechanism show an unsupported-jump message; they still support normal scrolling.
+
 | While KeyHop is active | Keys |
 | --- | --- |
 | Find a control by name | In click mode, press `/`, type a name, then use ↑ or ↓ and Return. |
@@ -44,7 +46,7 @@ The grid opens only when you press Space in click mode. Text selection works whe
 
 ## Make it yours
 
-Open **Settings…** from the crosshair menu to change either global shortcut, the label color, or the keymap. Both shortcuts are enabled across apps by default. You can pause them for the frontmost app from the menu.
+Open **Settings…** from the crosshair menu to change the global shortcuts, the label color, or the keymap. All three shortcuts are enabled across apps by default. You can pause them for the frontmost app from the menu.
 
 | Keymap | How labels are assigned |
 | --- | --- |
@@ -53,7 +55,7 @@ Open **Settings…** from the crosshair menu to change either global shortcut, t
 | **Custom** | Uses 2–26 different letters in the order you enter. Try the letters in the preview, then click **Apply**. |
 | **QWERTY** | Maps positions in the window to keyboard rows. Upper-left targets use `q`, lower-left targets use `z`. Targets in the same region get distinct suffixes. |
 
-Click inside **Live preview** to try your keys without leaving Settings. Its miniature keyboard highlights each physical key as you press it. The text preview lets you practice both endpoints without changing your clipboard.
+Click inside **Live preview** to try your keys without leaving Settings. Its miniature keyboard highlights each physical key as you press it. The text preview lets you practice both endpoints without changing your clipboard. The Scroll preview has two independent panels for practicing panel selection and scrolling in both directions.
 
 ## Development
 

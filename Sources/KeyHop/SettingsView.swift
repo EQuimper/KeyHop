@@ -4,6 +4,7 @@ struct SettingsView: View {
     let onBindingChange: (String, Binding) -> Void
     @State private var click = Binding.load("click", shift: false)
     @State private var select = Binding.load("select", shift: true)
+    @State private var scroll = Binding.load("scroll")
     @State private var recording: String?
     @State private var shortcutMessage = ""
     @State private var monitor: Any?
@@ -65,6 +66,7 @@ struct SettingsView: View {
                     Text("Shortcuts").font(.system(size: 18, weight: .semibold))
                     shortcut("Click", mode: "click", binding: click)
                     shortcut("Select and copy", mode: "select", binding: select)
+                    shortcut("Scroll", mode: "scroll", binding: scroll)
                     if !shortcutMessage.isEmpty { Text(shortcutMessage).font(.caption).foregroundStyle(.secondary) }
                 }.frame(width: 278, alignment: .leading)
                 Divider()
@@ -141,12 +143,15 @@ struct SettingsView: View {
                   text.count == 1, text.first?.isLetter == true,
                   !event.modifierFlags.intersection([.control, .option, .command]).isEmpty else { return nil }
             let binding = Binding(key: event.keyCode, flags: CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue)), name: text)
-            guard !(mode == "click" ? select : click).matches(binding) else {
-                shortcutMessage = "That shortcut is assigned to the other action."
+            let bindings = ["click": click, "select": select, "scroll": scroll]
+            guard !bindings.contains(where: { $0.key != mode && $0.value.matches(binding) }) else {
+                shortcutMessage = "That shortcut is assigned to another action."
                 return nil
             }
             binding.save(mode)
-            if mode == "click" { click = binding } else { select = binding }
+            if mode == "click" { click = binding }
+            else if mode == "scroll" { scroll = binding }
+            else { select = binding }
             onBindingChange(mode, binding)
             stopRecording()
             return nil
