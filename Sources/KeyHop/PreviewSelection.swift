@@ -5,12 +5,11 @@ struct PreviewSelection {
     static let words = lines.flatMap { $0 }
     var query = ""
     var anchor: Int?
-    var cursor = 0
+    private(set) var current: Int? = 0
     var finished = false
     var candidates: [Int] {
         Self.words.indices.filter { query.isEmpty || Self.words[$0].localizedCaseInsensitiveContains(query) }
     }
-    var current: Int? { candidates.indices.contains(cursor) ? candidates[cursor] : nil }
     var range: ClosedRange<Int>? {
         guard let current else { return nil }
         let start = anchor ?? current
@@ -19,20 +18,19 @@ struct PreviewSelection {
     mutating func edit(_ value: String) {
         if finished { self = Self() }
         query = value
-        cursor = 0
+        current = SearchMatch.preferred(in: candidates, anchor: anchor, query: query)
     }
     mutating func step(_ delta: Int) {
-        let count = candidates.count
-        if count > 0 { cursor = (cursor + count + delta) % count }
+        current = SearchMatch.step(in: candidates, from: current, by: delta)
     }
     mutating func choose(_ index: Int) {
-        guard let position = candidates.firstIndex(of: index), !finished else { return }
+        guard candidates.contains(index), !finished else { return }
         if anchor == nil {
             anchor = index
             query = ""
-            cursor = index
+            current = index
         } else {
-            cursor = position
+            current = index
             finished = true
         }
     }

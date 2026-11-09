@@ -205,7 +205,7 @@ struct JumpPreview: View {
             }
             Text(selection.finished ? "Selected" : (selection.anchor == nil ? "Start" : "End") +
                  (selection.query.isEmpty ? "" : " · " + selection.query) +
-                 (selection.current == nil ? " · No match" : ""))
+                 (selection.current == nil ? (selection.candidates.isEmpty ? " · No match" : " · ↑ earlier match") : ""))
                 .font(.system(size: 10, design: .monospaced)).foregroundStyle(.white.opacity(0.65)).padding(.vertical, 5)
         }.padding(.horizontal, 7).padding(.top, 4)
     }

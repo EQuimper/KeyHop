@@ -15,7 +15,8 @@ final class Session {
     private var filtering = false
     private var query = ""
     private var prefix = ""
-    private var cursor = 0
+    private var groupCursor = 0
+    private var currentMatch: Int?
     private var area = CGRect.zero
     private var generation = UUID()
     private var loading: Task<Void, Never>?
@@ -125,8 +126,8 @@ final class Session {
     }
 
     private func refreshMatches() {
-        cursor = 0
         candidates = targets.indices.filter { query.isEmpty || targets[$0].title.localizedCaseInsensitiveContains(query) }
+        currentMatch = SearchMatch.preferred(in: candidates, anchor: anchor, query: query)
         hints = ClickHint.make(rects: targets.map(\.rect), candidates: candidates,
                                groupMarkers: phase == .click && query.isEmpty, letters: Keymap.letters(),
                                spatialBounds: UserDefaults.standard.string(forKey: Keymap.choiceKey) == Keymap.qwerty.rawValue ? window?.bounds : nil)
@@ -141,8 +142,8 @@ final class Session {
             return
         }
         if let group = openGroup {
-            overlay.show(in: window.bounds, tags: [], highlights: [targets[group[cursor]].rect],
-                         message: "Group · \(cursor + 1)/\(group.count) · ↑ ↓ · ↵ click · ⇧↵ right-click")
+            overlay.show(in: window.bounds, tags: [], highlights: [targets[group[groupCursor]].rect],
+                         message: "Group · \(groupCursor + 1)/\(group.count) · ↑ ↓ · ↵ click · ⇧↵ right-click")
             return
         }
         let mode = phase == .click ? "Click" : (phase == .start ? "Start" : "End")
@@ -156,16 +157,16 @@ final class Session {
                            prefix: prefix)
             }
         }
-        if !candidates.isEmpty && (filtering || phase == .end) {
-            let index = candidates[cursor]
+        if let index = currentMatch, filtering || phase == .end {
             if let anchor, phase == .end {
                 for group in Dictionary(grouping: targets[min(anchor,index)...max(anchor,index)], by: { $0.line }).values {
                     highlights.append(group.reduce(CGRect.null) { $0.union($1.rect) })
                 }
             } else { highlights.append(targets[index].rect) }
         }
+        let earlierHint = currentMatch == nil && !candidates.isEmpty ? " · ↑ earlier match" : ""
         let detail = filtering
-            ? "\(query.isEmpty ? "Type to find" : query) · \(candidates.count) · Tab labels · ↵"
+            ? "\(query.isEmpty ? "Type to find" : query) · \(candidates.count)\(earlierHint) · Tab labels · ↵"
             : "\(prefix.isEmpty ? "Type a label" : "Type the remaining letters") · / find" + (phase == .click ? " · Space grid" : "")
         overlay.show(in: window.bounds, tags: tags, highlights: highlights, message: "\(mode) · \(detail)" + (phase == .click ? " · ⇧ right-click" : ""))
     }
@@ -202,9 +203,9 @@ final class Session {
         if let group = openGroup {
             switch key {
             case 125, 126:
-                cursor = (cursor + (key == 125 ? 1 : group.count - 1)) % group.count
+                groupCursor = (groupCursor + (key == 125 ? 1 : group.count - 1)) % group.count
                 render()
-            case 36: choose(group[cursor], button: button)
+            case 36: choose(group[groupCursor], button: button)
             default: break
             }
             return
@@ -220,10 +221,10 @@ final class Session {
         if key == 48 { filtering.toggle(); prefix = ""; render(); return }
         if filtering {
             switch key {
-            case 36: if !candidates.isEmpty { choose(candidates[cursor], button: button) }
+            case 36: if let currentMatch { choose(currentMatch, button: button) }
             case 125, 126:
                 guard !candidates.isEmpty else { return }
-                cursor = (cursor + (key == 125 ? 1 : candidates.count - 1)) % candidates.count
+                currentMatch = SearchMatch.step(in: candidates, from: currentMatch, by: key == 125 ? 1 : -1)
                 render()
             case 51:
                 if !query.isEmpty { query.removeLast() }
@@ -246,7 +247,7 @@ final class Session {
                 choose(hint.members[0], button: button)
             } else {
                 openGroup = hint.members
-                cursor = 0
+                groupCursor = 0
                 prefix = ""
                 render()
             }
@@ -291,9 +292,6 @@ final class Session {
             anchor = index
             phase = .end
             resetFilter(search: true)
-            // The initial preview stays on the starting word until the user types.
-            cursor = index
-            render()
         case .end:
             guard let anchor, let window else { return }
             let (start, end) = Hints.drag(from: targets[anchor], to: target, forward: anchor <= index)

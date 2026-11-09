@@ -10,6 +10,21 @@ final class PreviewTests: XCTestCase {
         XCTAssertEqual(SpatialKeymap.labels(points: points, bounds: bounds), ["qw","qq","p","a","l","z","m"])
     }
 
+    func testSecondWordSearchStartsAfterTheAnchorOnEveryEdit() throws {
+        var selection = PreviewSelection()
+        selection.edit("the")
+        selection.choose(try XCTUnwrap(selection.current))
+        XCTAssertEqual(selection.range, 4...4)
+        selection.edit("e")
+        XCTAssertEqual(selection.current, 5, "keyboard follows the anchor; Keep and the also contain e")
+        selection.edit("ee")
+        XCTAssertNil(selection.current, "Only Keep matches, above the anchor")
+        selection.edit("e")
+        XCTAssertEqual(selection.current, 5)
+        selection.edit("")
+        XCTAssertEqual(selection.range, 4...4)
+    }
+
     func testPreviewSupportsBackwardsSelectionsAndEmptySearches() {
         var selection = PreviewSelection()
         selection.edit("keyboard")
@@ -17,6 +32,8 @@ final class PreviewTests: XCTestCase {
         selection.edit("missing")
         XCTAssertNil(selection.range)
         selection.edit("both")
+        XCTAssertNil(selection.current)
+        selection.step(-1)
         selection.choose(selection.current!)
         XCTAssertTrue(selection.finished)
         XCTAssertEqual(selection.range, 1...5)
